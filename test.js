@@ -11,18 +11,13 @@ describe('User Management', () => {
   before(done => {
     connect('mongodb://localhost:27017/test1', {useNewUrlParser: true}).then(() => console.log('database initialized'))
     appServer  = server.listen(3001, () => console.log(`Listening on 3000`))
-    done()
+    UserModel.remove().then(() => done()) // remove all users from database
   })
   after(done => {
     appServer.close()
     done()
   })
-  it('shoulld get all users', done => {
-    UserModel.find().then(res => {
-      console.log(res)
-      done()
-    })
-  })
+  
   it('should create a user', done => {
     const user = {
       createdAt: Date.now(),
@@ -88,7 +83,6 @@ describe('User Management', () => {
        staticMapUrl: 'hey',
     }
     agent.post('/races').send({race}).then(res => {
-      console.log(res)
       expect(res).to.be.ok
       expect(res.status).to.eq(200)
       done()
@@ -96,7 +90,7 @@ describe('User Management', () => {
   })
   it('should bulk create users', done => {
       let users = []
-      for(let i=0; i< 100000; i++) {
+      for(let i=0; i< 1000; i++) {
         users.push({
           createdAt: Date.now(),
           updatedAt: Date.now(),
@@ -130,6 +124,13 @@ describe('User Management', () => {
         expect(res).to.be.ok
         expect(res.status).to.eq(200)
       })
+  })
+  it('shoulld get all users', done => {
+   agent.get('/users').then(res => {
+    expect(res.status).to.eq(200)
+    console.log(res.body)
+    expect(res.body).to.be.an.array
+   })
   })
 
   
