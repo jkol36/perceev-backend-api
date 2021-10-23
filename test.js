@@ -1,21 +1,34 @@
 import { connect } from 'mongoose';
 import { expect } from 'chai';
-import { UserModel } from './models';
+import { UserModel, RaceModel, AthleteModel } from './models';
 import server from './server';
 import request from 'supertest';
 import faker from 'faker';
+import dotenv from 'dotenv';
+
 
 const agent = request(server)
 let appServer
 describe('User Management', () => {
   before(done => {
-    connect('mongodb://localhost:27017/test1', {useNewUrlParser: true}).then(() => console.log('database initialized'))
-    appServer  = server.listen(3001, () => console.log(`Listening on 3000`))
-    UserModel.remove().then(() => done()) // remove all users from database
+    dotenv.load()
+    console.log('process.env.MONGO_API_URL', process.env.MONGO_API_URL)
+    connect(process.env.MONGO_API_URL, {useNewUrlParser: true, serverSelectionTimeoutMS: 5000, useUnifiedTopology:true}).then(() => {
+      console.log('yooo')
+      console.log('database initialized')
+      appServer  = server.listen(3001, () => {
+        console.log('listening on 3000')
+        done()
+      })
+    })
+    .catch(console.log)
+    
   })
   after(done => {
-    appServer.close()
-    done()
+    Promise.all([UserModel.remove(), RaceModel.remove(), AthleteModel.remove()]).then(() => {
+      appServer.close()
+      done()
+    })
   })
   
   it('should create a user', done => {
@@ -45,6 +58,7 @@ describe('User Management', () => {
       emailVerified: false,
     }
     agent.post('/users').send({user}).then(res => {
+      console.log('created user', res.body)
       expect(res).to.be.ok
       expect(res.status).to.eq(200)
       done()
@@ -83,9 +97,11 @@ describe('User Management', () => {
        staticMapUrl: 'hey',
     }
     agent.post('/races').send({race}).then(res => {
+      console.log(res.body)
       expect(res).to.be.ok
       expect(res.status).to.eq(200)
       done()
+      
     })
   })
   it('should bulk create users', done => {
@@ -120,17 +136,72 @@ describe('User Management', () => {
       agent.post('/users/bulk')
       .send({users})
       .then(res => {
-        console.log(res)
+        console.log('users bulk', res.body)
         expect(res).to.be.ok
         expect(res.status).to.eq(200)
+        done()
       })
   })
   it('shoulld get all users', done => {
    agent.get('/users').then(res => {
     expect(res.status).to.eq(200)
-    console.log(res.body)
     expect(res.body).to.be.an.array
+    done()
    })
+  })
+  it('should get all races', done => {
+    agent.get('/races').then(res => {
+      expect(res.status).to.eq(200)
+      expect(res.body).to.be.an.array
+      console.log(res.body)
+      done()
+    })
+  })
+  it.only('should create an athlete', done => {
+    let athlete = {
+      phone: faker.phone.phoneNumber,
+      firstName: faker.name.findName(),
+      lastName: faker.name.findName(),
+      weight: faker.datatype.number(),
+      races: [],
+    }
+
+    agent
+    .post('/athletes')
+    .send({athlete})
+    .then(res => {
+      expect(res.status).to.eq(200)
+      done()
+    })
+  })
+  it.only('should bulk create athletes', done => {
+    let athletes = []
+    for(var i = 0; i< 1000; i++) {
+      athletes.push({
+        phone: faker.phone.phoneNumber,
+        firstName: faker.name.findName(),
+        lastName: faker.name.findName(),
+        weight: faker.datatype.number(),
+        races: []
+      })
+    }
+    agent
+    .post('/athletes/bulk')
+    .send({athletes})
+    .then(res => {
+      expect(res).to.be.ok
+      done()
+    })
+  })
+
+  it.only('should get athletes', done => {
+    agent
+    .get('/athletes')
+    .then(res => {
+      console.log(res.body.athletes)
+      done()
+      // do something with the response
+    })
   })
 
   

@@ -10,6 +10,11 @@ router.route('/')
         res.json({status: 200, body: race})
     })
 })
+.get((req, res) => {
+  RaceModel.find({}).then(races => {
+    res.json({status: 200, body: races})
+  })
+})
 
 router.route('/bulk')
 .post((req, res) => {
