@@ -10,10 +10,17 @@ router.route('/')
     AthleteModel.create(athlete).then(athlete => {
         res.json({status: 200, body: athlete})
     })
+    .catch(err => {
+      res.json({status: 500, body: err})
+    })
 })
 .get((req, res) => {
   AthleteModel.find({}).then(athletes => {
     res.json({status: 200, body: athletes})
+  })
+  .catch(err => {
+    console.log(err)
+    res.json({status: 500, body: err})
   })
 })
 
